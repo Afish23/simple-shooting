@@ -331,7 +331,6 @@ private:
 class Enemy
 {
 public:
-    virtual ~Enemy() = default; // 必须有虚析构
     Enemy(IMAGE& img, int x, IMAGE*& boom)
         :img(img), isdie(false), boomsum(0)
     {
@@ -343,7 +342,7 @@ public:
         rect.top = -img.getheight();
         rect.bottom = 0;
     }
-    virtual bool Show()
+    bool Show()
     {
         if (isdie)
         {
@@ -364,61 +363,17 @@ public:
         putimage(rect.left, rect.top, &img);
         return true;
     }
-    virtual void Isdie()
+    void Isdie()
     {
         isdie = true;
     }
-    virtual RECT& GetRect() { return rect; }
-    virtual bool TakeDamage(int damage); // 扣血接口
+    RECT& GetRect() { return rect; }
 private:
     IMAGE& img;
     RECT rect;
     IMAGE selfboom[3];
     bool isdie;
     int boomsum;
-    int HP;
-};
-
-class ShieldedEnemy : public Enemy {
-public:
-    ShieldedEnemy(IMAGE& img, int x, IMAGE* boom)
-        : Enemy(img, x, boom) {
-        HP = 5; // 高HP
-    }
-
-    void Isdie() override {
-        isdie = true;
-    }
-
-    bool TakeDamage(int damage) override {
-        HP -= damage;
-        if (HP <= 0) {
-            I sdie();
-            return false;
-        }
-        return true;
-    }
-};
-
-class AgileEnemy : public Enemy {
-public:
-    AgileEnemy(IMAGE& img, int x, IMAGE* boom)
-        : Enemy(img, x, boom) {
-        HP = 1; // 低HP
-    }
-
-    void Isdie() override {
-        isdie = true;
-    }
-
-    bool TakeDamage(int damage) override {
-        HP -= damage;
-        if (HP <= 0) {
-            I sdie();
-            return false;
-        }
-        return true;
-    }
 };
 
 class Bullet
