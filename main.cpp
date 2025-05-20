@@ -121,6 +121,10 @@ void Over(unsigned long long& kill)
 	EndBatchDraw();
 
 
+	// 键盘事件 （按Enter返回）
+	LPCTSTR info = _T("按Enter返回");
+	settextstyle(20, 0, _T("黑体"));
+	outtextxy(swidth - textwidth(info), sheight - textheight(info), info);
 
 	EndBatchDraw();
 	while (true)
@@ -488,6 +492,7 @@ bool Play()
 
 		EndBatchDraw();
 	}
+	printf_s("e");
 	Over(kill);
 
 	return true;
