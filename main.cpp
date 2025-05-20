@@ -1,9 +1,11 @@
 // 飞机大战
 // EasyX
 #include <iostream>
+#include <fstream>
 #include <graphics.h>//easyx
 #include <vector>
 #include <conio.h>
+#include <algorithm>
 using namespace std;
 
 constexpr auto swidth = 600;
@@ -12,6 +14,95 @@ constexpr auto sheight = 1100;
 constexpr unsigned int SHP = 4;
 
 constexpr auto hurttime = 1000;//ms
+
+void Welcome();
+
+void ShowRecords()
+{
+	BeginBatchDraw();
+	cleardevice();
+
+	settextstyle(40, 0, _T("黑体"));
+	settextcolor(BLUE);
+	const TCHAR* title = _T("历史击杀记录");
+	int textWidth = textwidth(title);
+	int xTitle = (getwidth() - textWidth) / 2;
+	outtextxy(xTitle, 80, title);
+
+	std::ifstream fin("kill_records.txt");
+	if (!fin.is_open())
+	{
+		settextstyle(40, 0, _T("黑体"));
+		settextcolor(RED);
+		const TCHAR* noRecordMsg = _T("暂无击杀记录");
+		int noRecordTextWidth = textwidth(noRecordMsg);
+		int xNoRecord = (getwidth() - noRecordTextWidth) / 2;
+
+		outtextxy(xNoRecord, 180, noRecordMsg);
+	}
+	else
+	{
+		std::vector<unsigned long long> records;
+		unsigned long long kill;
+		int count = 0;
+
+		// 读取所有击杀记录
+		while (fin >> kill)
+		{
+			records.push_back(kill);
+		}
+		fin.close();
+
+		// 对击杀记录进行从高到低排序
+		std::sort(records.begin(), records.end(), [](unsigned long long a, unsigned long long b) {
+			return a > b; // 按降序排列
+			});
+
+		settextstyle(24, 0, _T("黑体"));
+		settextcolor(BLACK);
+
+		// 显示排序后的击杀记录
+		for (size_t i = 0; i < records.size() && i < 10; ++i)
+		{
+			TCHAR line[64];
+			_stprintf_s(line, _T("第 %d 名：击杀数 %llu"), i + 1, records[i]);
+			outtextxy((swidth - textwidth(line)) / 2, 180 + i * 30, line);
+		}
+
+		if (records.empty())
+		{
+			settextstyle(40, 0, _T("黑体"));
+			settextcolor(RED);
+			const TCHAR* noRecordMsg = _T("暂无击杀记录");
+			int noRecordTextWidth = textwidth(noRecordMsg);
+			int xNoRecord = (getwidth() - noRecordTextWidth) / 2;
+
+			outtextxy(xNoRecord, 180, noRecordMsg);
+		}
+	}
+
+
+
+	// 键盘事件 （按Enter返回）
+	LPCTSTR info = _T("按Enter返回");
+	settextstyle(30, 0, _T("黑体")); // 字小一些
+	settextcolor(BLACK);
+	// 绘制提示文字（下方一点）
+	outtextxy(swidth / 2 - textwidth(info) / 2, sheight / 5 + 500, info);
+
+	EndBatchDraw();
+
+	// 等待用户按 Enter 返回
+	while (true)
+	{
+		ExMessage mess;
+		getmessage(&mess, EM_KEY);
+		if (mess.vkcode == 0x0D)
+		{
+			return Welcome();
+		}
+	}
+}
 
 bool PointInRect(int x, int y, RECT& r)
 {
@@ -36,9 +127,10 @@ void Welcome()
 	loadimage(&bkimg, _T("images/bk2.png"), swidth, sheight * 2);
 	LPCTSTR title = _T("飞机大战");
 	LPCTSTR tplay = _T("开始游戏");
+	LPCTSTR trecord = _T("击杀记录");
 	LPCTSTR texit = _T("退出游戏");
 
-	RECT tplayr, texitr;
+	RECT tplayr, trecordr, texitr;
 	BeginBatchDraw();
 	setbkcolor(RGB(195, 200, 201));
 	cleardevice();
@@ -53,12 +145,18 @@ void Welcome()
 	tplayr.top = sheight / 5 * 2.5;
 	tplayr.bottom = tplayr.top + textheight(tplay);
 
+	trecordr.left = swidth / 2 - textwidth(texit) / 2;
+	trecordr.right = trecordr.left + textwidth(texit);
+	trecordr.top = sheight / 5 * 3;
+	trecordr.bottom = trecordr.top + textheight(texit);
+
 	texitr.left = swidth / 2 - textwidth(texit) / 2;
 	texitr.right = texitr.left + textwidth(texit);
-	texitr.top = sheight / 5 * 3;
+	texitr.top = sheight / 5 * 3.5;
 	texitr.bottom = texitr.top + textheight(texit);
 
 	outtextxy(tplayr.left, tplayr.top, tplay);
+	outtextxy(trecordr.left, trecordr.top, trecord);
 	outtextxy(texitr.left, texitr.top, texit);
 
 	EndBatchDraw();
@@ -72,6 +170,10 @@ void Welcome()
 			if (PointInRect(mess.x, mess.y, tplayr))
 			{
 				return;
+			}
+			else if (PointInRect(mess.x, mess.y, trecordr))
+			{
+				return ShowRecords();
 			}
 			else if (PointInRect(mess.x, mess.y, texitr))
 			{
@@ -120,13 +222,15 @@ void Over(unsigned long long& kill)
 
 	EndBatchDraw();
 
+	// 将击杀数写入文件
+	ofstream fout("kill_records.txt", ios_base::app); // 追加模式
+	if (fout.is_open())
+	{
+		fout << kill << "\n";
+		fout.close();
+	}
 
-	// 键盘事件 （按Enter返回）
-	LPCTSTR info = _T("按Enter返回");
-	settextstyle(20, 0, _T("黑体"));
-	outtextxy(swidth - textwidth(info), sheight - textheight(info), info);
 
-	EndBatchDraw();
 	while (true)
 	{
 		ExMessage mess;
@@ -416,6 +520,13 @@ bool Play()
 			}
 		}
 		hp.Show();
+		// 显示当前击杀数
+		TCHAR killStr[64];
+		_stprintf_s(killStr, _T("击杀数：%llu"), kill);
+		setbkcolor(RGB(195, 200, 201));
+		settextstyle(24, 0, _T("黑体"));
+		settextcolor(RED);
+		outtextxy(10, 10, killStr);
 
 		auto bsit = bs.begin();
 		while (bsit != bs.end())
