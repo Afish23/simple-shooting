@@ -121,6 +121,10 @@ void Over(unsigned long long& kill)
 	EndBatchDraw();
 
 
+	// 键盘事件 （按Enter返回）
+	LPCTSTR info = _T("按Enter返回");
+	settextstyle(20, 0, _T("黑体"));
+	outtextxy(swidth - textwidth(info), sheight - textheight(info), info);
 
 	EndBatchDraw();
 	while (true)
@@ -178,13 +182,52 @@ public:
 	void Control()
 	{
 		ExMessage mess;
-		if (peekmessage(&mess, EM_MOUSE))
+		/*if (peekmessage(&mess, EM_MOUSE))
 		{
 			rect.left = mess.x - img.getwidth() / 2;
 			rect.top = mess.y - img.getheight() / 2;
 			rect.right = rect.right = rect.left + img.getwidth();
 			rect.bottom = rect.top + img.getheight();
+		}*/
+		while (peekmessage(&mess, EM_KEY))
+		{
+			getmessage(&mess, EM_KEY); // 移除消息
+			int moveSpeed = 50;
+			switch (mess.vkcode)
+			{
+			case VK_UP:
+				if (rect.top > 0) rect.top -= moveSpeed;
+				break;
+			case VK_DOWN:
+				if (rect.bottom < sheight) rect.top += moveSpeed;
+				break;
+			case VK_LEFT:
+				if (rect.left > 0) rect.left -= moveSpeed;
+				break;
+			case VK_RIGHT:
+				if (rect.right < swidth) rect.left += moveSpeed;
+				break;
+			case 0x20: // Space 暂停
+			{
+				settextstyle(40, 0, _T("黑体"));
+				outtextxy(swidth / 2 - 80, sheight / 2 - 30, _T("游戏暂停，按空格继续"));
+				while (true)
+				{
+					if (mess.vkcode == 0x20)
+					{
+						clearrectangle(swidth / 2 - 80, sheight / 2 - 30, swidth / 2 + 80, sheight / 2 + 30);
+						break;
+					}
+				}
+			}
+			break;
+			case VK_ESCAPE: // Esc 退出
+				exit(0);
+			}
+			rect.right = rect.left + img.getwidth();
+			rect.bottom = rect.top + img.getheight();
 		}
+	}
 	}
 
 	bool hurt()
@@ -389,27 +432,6 @@ bool Play()
 		flushmessage();
 		Sleep(2);
 		hp.Control();
-
-		if (_kbhit())
-		{
-			char v = _getch();
-			if (v == 0x20)
-			{
-				Sleep(500);
-				while (true)
-				{
-					if (_kbhit())
-					{
-						v = _getch();
-						if (v == 0x20)
-						{
-							break;
-						}
-					}
-					Sleep(16);
-				}
-			}
-		}
 		hp.Show();
 
 		auto bsit = bs.begin();
@@ -488,6 +510,7 @@ bool Play()
 
 		EndBatchDraw();
 	}
+	printf_s("e");
 	Over(kill);
 
 	return true;
