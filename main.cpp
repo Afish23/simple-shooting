@@ -182,17 +182,24 @@ public:
 	void Control()
 	{
 		ExMessage mess;
-		/*if (peekmessage(&mess, EM_MOUSE))
+
+		/*// 优先处理鼠标控制
+		if (peekmessage(&mess, EM_MOUSE))
 		{
-			rect.left = mess.x - img.getwidth() / 2;
-			rect.top = mess.y - img.getheight() / 2;
-			rect.right = rect.right = rect.left + img.getwidth();
-			rect.bottom = rect.top + img.getheight();
+			if (mess.message == WM_MOUSEMOVE)
+			{
+				rect.left = mess.x - img.getwidth() / 2;
+				rect.top = mess.y - img.getheight() / 2;
+				rect.right = rect.left + img.getwidth();
+				rect.bottom = rect.top + img.getheight();
+			}
 		}*/
+
+		// 处理键盘控制（使用 getmessage 确保消息被移除）
 		while (peekmessage(&mess, EM_KEY))
 		{
 			getmessage(&mess, EM_KEY); // 移除消息
-			int moveSpeed = 50;
+			int moveSpeed = 30;
 			switch (mess.vkcode)
 			{
 			case VK_UP:
@@ -209,14 +216,20 @@ public:
 				break;
 			case 0x20: // Space 暂停
 			{
-				settextstyle(40, 0, _T("黑体"));
-				outtextxy(swidth / 2 - 80, sheight / 2 - 30, _T("游戏暂停，按空格继续"));
-				while (true)
+				if (peekmessage(&mess, EM_KEY) && mess.vkcode == VK_SPACE) // 检查是否有空格按下
 				{
-					if (mess.vkcode == 0x20)
+					getmessage(&mess, EM_KEY); // 移除消息
+					settextstyle(40, 0, _T("黑体"));
+					outtextxy(swidth / 2 - 80, sheight / 2 - 30, _T("游戏暂停，按空格继续"));
+					while (true)
 					{
-						clearrectangle(swidth / 2 - 80, sheight / 2 - 30, swidth / 2 + 80, sheight / 2 + 30);
-						break;
+						if (peekmessage(&mess, EM_KEY) && mess.vkcode == VK_SPACE) // 再次检查
+						{
+							getmessage(&mess, EM_KEY); // 移除消息
+							clearrectangle(swidth / 2 - 80, sheight / 2 - 30, swidth / 2 + 80, sheight / 2 + 30);
+							break;
+						}
+						Sleep(16); // 避免 CPU 占用过高
 					}
 				}
 			}
@@ -227,7 +240,6 @@ public:
 			rect.right = rect.left + img.getwidth();
 			rect.bottom = rect.top + img.getheight();
 		}
-	}
 	}
 
 	bool hurt()
