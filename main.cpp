@@ -121,6 +121,10 @@ void Over(unsigned long long& kill)
 	EndBatchDraw();
 
 
+	// 键盘事件 （按Enter返回）
+	LPCTSTR info = _T("按Enter返回");
+	settextstyle(20, 0, _T("黑体"));
+	outtextxy(swidth - textwidth(info), sheight - textheight(info), info);
 
 	EndBatchDraw();
 	while (true)
@@ -337,13 +341,14 @@ bool Play()
 	cleardevice();
 	bool is_play = true;
 
-	IMAGE heroimg, enemyimg, bkimg, bulletimg;
+	IMAGE heroimg, enemyimg, bkimg, bulletimg, Ebulletimg;
 	IMAGE eboom[3];
 
 	loadimage(&heroimg, _T("images/me1.png"));
 	loadimage(&enemyimg, _T("images/enemy1.png"));
 	loadimage(&bkimg, _T("images/bk2.png"), swidth, sheight * 2);
 	loadimage(&bulletimg, _T("images/bullet1.png"));
+	loadimage(&Ebulletimg, _T("images/bullet2.png"));
 
 	loadimage(&eboom[0], _T("images/enemy1_down2.png"));
 	loadimage(&eboom[1], _T("images/enemy1_down3.png"));
@@ -369,7 +374,7 @@ bool Play()
 	while (is_play)
 	{
 		bsing++;
-		if (bsing % 10 == 0)
+		if (bsing % 20 == 0)
 		{
 			bs.push_back(new Bullet(bulletimg, hp.GetRect()));
 		}
@@ -378,7 +383,7 @@ bool Play()
 			bsing = 0;
 			for (auto& i : es)
 			{
-				ebs.push_back(new EBullet(bulletimg, i->GetRect()));
+				ebs.push_back(new EBullet(Ebulletimg, i->GetRect()));
 			}
 		}
 
