@@ -11,7 +11,7 @@ using namespace std;
 constexpr auto swidth = 600;
 constexpr auto sheight = 1100;
 
-constexpr unsigned int SHP = 4;
+constexpr int SHP = 8;
 constexpr auto hurttime = 1000;//ms
 
 enum class Mode { AUTO, MANUAL };
@@ -279,16 +279,20 @@ public:
         rect.right = rect.left + img.getwidth();
         rect.bottom = sheight;
     }
+    bool isalive() {
+        if (HP>0)return true;
+        else return false;
+    }
     bool Show()
     {
-        if (HP == 0)
+        if (HP <= 0)
         {
             if (boomsum == 3)
             {
                 return false;
             }
-            Sleep(150);
             putimage(rect.left, rect.top, &selfboom[boomsum]);
+            Sleep(50);
             boomsum++;
 
             return true;
@@ -296,7 +300,9 @@ public:
         setlinecolor(RED);
         setlinestyle(PS_SOLID, 4);
         putimage(rect.left, rect.top, &img);
-        line(rect.left, rect.top - 5, rect.left + (img.getwidth() / SHP * HP), rect.top - 5);
+        float barWidth = (img.getwidth()*1.0*HP/SHP);
+        //cout << HP <<"\n";
+        if(HP>=0)line(rect.left, rect.top - 5,rect.left+ barWidth, rect.top - 5);
         return true;
     }
     void Control()
@@ -311,10 +317,13 @@ public:
         }
     }
 
-    bool hurt()
+    bool hurt(int damage)
     {
-        if (HP != 0)HP--;
-        return (HP == 0 && boomsum == 3) ? false : true;
+        if (HP > 0) {
+            HP -= damage;
+            //cout << HP << " " << damage << "\n";
+        }
+        return (HP <= 0 && boomsum == 3) ? false : true;
     }
 
     RECT& GetRect() { return rect; }
@@ -322,7 +331,7 @@ public:
 private:
     IMAGE& img;
     RECT rect;
-    unsigned int HP;
+    int HP;
     bool isdie;
     int boomsum;
     IMAGE selfboom[3];
@@ -330,10 +339,21 @@ private:
 
 class Enemy
 {
+protected:
+    void SetHP(int hp) { HP = hp; }//cout << HP << "\n";
+    void SetDamage1(int damage1) { this->damage1 = damage1;  }
+    void SetDamage2(int damage2) { this->damage2 = damage2; }
+    IMAGE& img;
+    RECT rect;
+    IMAGE selfboom[3];
+    bool isdie;
+    int boomsum;
+    int HP;
+    int damage1=1,damage2=1;//1是子弹伤害，2是碰撞伤害
 public:
     virtual ~Enemy() = default; // 必须有虚析构
     Enemy(IMAGE& img, int x, IMAGE*& boom)
-        :img(img), isdie(false), boomsum(0)
+        :img(img), isdie(false), boomsum(0),HP(1)
     {
         selfboom[0] = boom[0];
         selfboom[1] = boom[1];
@@ -343,6 +363,8 @@ public:
         rect.top = -img.getheight();
         rect.bottom = 0;
     }
+    int GetDamage1() const { return damage1; }
+    int GetDamage2() const { return damage2; }
     virtual bool Show()
     {
         if (isdie)
@@ -369,58 +391,67 @@ public:
         isdie = true;
     }
     virtual RECT& GetRect() { return rect; }
-    virtual bool TakeDamage(int damage); // 扣血接口
-private:
-    IMAGE& img;
-    RECT rect;
-    IMAGE selfboom[3];
-    bool isdie;
-    int boomsum;
-    int HP;
-};
+    virtual bool TakeDamage()
+    {
+        HP --;
 
-class ShieldedEnemy : public Enemy {
-public:
-    ShieldedEnemy(IMAGE& img, int x, IMAGE* boom)
-        : Enemy(img, x, boom) {
-        HP = 5; // 高HP
-    }
-
-    void Isdie() override {
-        isdie = true;
-    }
-
-    bool TakeDamage(int damage) override {
-        HP -= damage;
-        if (HP <= 0) {
-            I sdie();
-            return false;
+        if (HP <= 0)
+        {
+            Isdie(); // 标记为死亡
+            return false; // 返回false表示敌人死亡
         }
-        return true;
+
+        return true; // 还活着
     }
 };
 
+class NormalEnemy : public Enemy {
+public:
+    NormalEnemy(IMAGE& img, int x, IMAGE* boom)
+        : Enemy(img, x, boom) {
+        // 派生类中修改属性
+        SetHP(1);
+        SetDamage1(1);
+        SetDamage2(1);
+    }
+};
+class TankEnemy : public Enemy {
+public:
+    TankEnemy(IMAGE& img, int x, IMAGE* boom)
+        : Enemy(img, x, boom) {
+        SetHP(3);  // 高血量
+        SetDamage1(1);
+        SetDamage2(2);  // 碰撞伤害更高
+    }
+};
+
+// 4. 敏捷敌人类（快速移动）
 class AgileEnemy : public Enemy {
 public:
     AgileEnemy(IMAGE& img, int x, IMAGE* boom)
         : Enemy(img, x, boom) {
-        HP = 1; // 低HP
+        SetHP(2);
+        SetDamage1(2);  // 子弹伤害更高
+        SetDamage2(1);
     }
 
-    void Isdie() override {
-        isdie = true;
-    }
-
-    bool TakeDamage(int damage) override {
-        HP -= damage;
-        if (HP <= 0) {
-            I sdie();
-            return false;
+   /* bool Show() override {
+        if (isdie) {
+            if (boomsum == 5) {  // 使用动态帧数量
+                return false;
+            }
+            putimage(rect.left, rect.top, boom + boomsum);  // 直接使用传入的爆炸动画
+            boomsum++;
+            return true;
         }
-        return true;
+        // 移动速度是普通敌人的1.5倍
+        rect.top += 6;
+        rect.bottom += 6;
+        putimage(rect.left, rect.top, &img);
+        return rect.top < sheight;
     }
+    */
 };
-
 class Bullet
 {
 public:
@@ -452,8 +483,8 @@ protected:
 class EBullet : public Bullet
 {
 public:
-    EBullet(IMAGE& img, RECT pr)
-        :Bullet(img, pr)
+    EBullet(IMAGE& img, RECT pr,int damage)
+        :Bullet(img, pr),damage(damage)
     {
         rect.left = pr.left + (pr.right - pr.left) / 2 - img.getwidth() / 2;
         rect.right = rect.left + img.getwidth();
@@ -471,19 +502,45 @@ public:
         putimage(rect.left, rect.top, &img);
         return true;
     }
+    int GetDamage() const {
+        return damage;
+    }
+private:
+    int damage; // 子弹伤害值
 };
 
-bool AddEnemy(vector<Enemy*>& es, IMAGE& enemyimg, IMAGE* boom)
-{
-    Enemy* e = new Enemy(enemyimg, abs(rand()) % (swidth - enemyimg.getwidth()), boom);
-    for (auto& i : es)
-    {
-        if (RectDuangRect(i->GetRect(), e->GetRect()))
-        {
+// 支持不同类型敌机及对应图片的AddEnemy函数
+bool AddEnemy(vector<Enemy*>& es, int enemyType,
+    IMAGE& normalImg, IMAGE& tankImg, IMAGE& agileImg,
+    IMAGE* normalBoom, IMAGE* tankBoom, IMAGE* agileBoom) {
+    Enemy* e = nullptr;
+
+    // 根据敌机类型创建对应的派生类并加载对应图片
+    switch (enemyType) {
+    case 0: // 普通敌机
+        e = new NormalEnemy(normalImg,
+            abs(rand()) % (swidth - normalImg.getwidth()), normalBoom);
+        break;
+    case 2: // 坦克敌机
+        e = new TankEnemy(tankImg,
+            abs(rand()) % (swidth - tankImg.getwidth()), tankBoom);
+        break;
+    case 1: // 敏捷敌机
+        e = new AgileEnemy(agileImg,
+            abs(rand()) % (swidth - agileImg.getwidth()), agileBoom);
+        break;
+    default:
+        return false;
+    }
+
+    // 碰撞检测
+    for (auto& existingEnemy : es) {
+        if (RectDuangRect(existingEnemy->GetRect(), e->GetRect())) {
             delete e;
             return false;
         }
     }
+
     es.push_back(e);
     return true;
 }
@@ -495,17 +552,17 @@ bool Play(Mode mode)
     cleardevice();
     bool is_play = true;
 
-    IMAGE heroimg, enemyimg, bkimg, bulletimg,Ebulletimg;
-    IMAGE eboom1[3], meboom[3], eboom2[5], eboom3[5];
-    // 在Play()函数中加载两种敌机图片
-    IMAGE enemyimg1, enemyimg2;  // 肉盾型和快攻型敌机图片
-    loadimage(&enemyimg1, _T("images/enemy2.png"));  // 快攻型
-    loadimage(&enemyimg2, _T("images/enemy3.png"));  // 肉盾型
+    IMAGE heroimg, bkimg, bulletimg, Ebulletimg;
+    IMAGE normalEnemyImg, tankEnemyImg, agileEnemyImg;  // 三种敌机图片
+    IMAGE eboom1[3], meboom[3], eboom2[5], eboom3[5];  // 爆炸动画
+
+    // 加载三种敌机图片
+    loadimage(&normalEnemyImg, _T("images/enemy1.png"));   // 普通敌机
+    loadimage(&tankEnemyImg, _T("images/enemy3.png"));    // 坦克敌机（肉盾）
+    loadimage(&agileEnemyImg, _T("images/enemy2.png"));   // 敏捷敌机
 
     loadimage(&Ebulletimg, _T("images/bullet2.png"));
-
     loadimage(&heroimg, _T("images/me1.png"));
-    loadimage(&enemyimg, _T("images/enemy1.png"));
     loadimage(&bkimg, _T("images/bk2.png"), swidth, sheight * 2);
     loadimage(&bulletimg, _T("images/bullet1.png"));
 
@@ -545,9 +602,9 @@ bool Play(Mode mode)
     int hero_bullet_timer = 0;     // 英雄自动子弹用
     int enemy_bullet_timer = 0;    // 敌机发射子弹计数器
 
-    for (int i = 0; i < 5; i++)
-    {
-        AddEnemy(es, enemyimg, eboom1);
+    for (int i = 0; i < 5; i++) {
+        AddEnemy(es, 0, normalEnemyImg, tankEnemyImg, agileEnemyImg,
+            eboom1, eboom3, eboom2);
     }
 
     Mode currentMode = mode; // 新增，游戏内当前模式
@@ -676,12 +733,12 @@ bool Play(Mode mode)
 
         // --- 自动/手动模式控制子弹发射 ---
         if (currentMode == Mode::MANUAL) {
-            if (fireKeyTriggered)
+            if (hp.isalive()&&fireKeyTriggered)
                 bs.push_back(new Bullet(bulletimg, hp.GetRect()));
         }
         else if (currentMode == Mode::AUTO) {
             hero_bullet_timer++;
-            if (hero_bullet_timer >= 20) { // 约每10帧发一发
+            if (hp.isalive()&&hero_bullet_timer >= 20) { // 约每10帧发一发
                 bs.push_back(new Bullet(bulletimg, hp.GetRect()));
                 hero_bullet_timer = 0;
             }
@@ -693,7 +750,9 @@ bool Play(Mode mode)
         {
             for (auto& i : es)
             {
-                ebs.push_back(new EBullet(Ebulletimg, i->GetRect()));
+                int damage = i->GetDamage1();
+                //cout << damage << "\n";
+                ebs.push_back(new EBullet(Ebulletimg, i->GetRect(), damage));
             }
             enemy_bullet_timer = 0;
         }
@@ -744,7 +803,8 @@ bool Play(Mode mode)
                 {
                     if (clock() - hurtlast >= hurttime)
                     {
-                        is_play = hp.hurt();
+                        int da = (*ebsit)->GetDamage();
+                        is_play = hp.hurt(da);
                         hurtlast = clock();
                     }
                 }
@@ -759,7 +819,8 @@ bool Play(Mode mode)
             {
                 if (clock() - hurtlast >= hurttime)
                 {
-                    is_play = hp.hurt();
+                    int da = (*it)->GetDamage2(); // 获取敌人的攻击力
+                    is_play = hp.hurt(da);
                     hurtlast = clock();
                 }
             }
@@ -791,9 +852,19 @@ bool Play(Mode mode)
                 it++;
             }
         }
-        for (int i = 0; i < 5 - es.size(); i++)
-        {
-            AddEnemy(es, enemyimg, eboom1);
+        for (int i = 0; i < 5 - es.size(); i++) {
+            int enemyType;
+            if (kill < 10) {
+                enemyType = 0;  // 普通敌机
+            }
+            else if (kill < 20) {
+                enemyType = rand() % 2;  // 普通或坦克
+            }
+            else {
+                enemyType = rand() % 3;  // 普通、坦克、敏捷
+            }
+            AddEnemy(es, enemyType, normalEnemyImg, tankEnemyImg, agileEnemyImg,
+                eboom1, eboom3, eboom2);
         }
 
         EndBatchDraw();
