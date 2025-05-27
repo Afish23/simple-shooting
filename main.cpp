@@ -4,16 +4,108 @@
 #include <graphics.h>//easyx
 #include <vector>
 #include <conio.h>
+#include <fstream>
+#include <algorithm>
 using namespace std;
 
 constexpr auto swidth = 600;
 constexpr auto sheight = 1100;
 
 constexpr unsigned int SHP = 4;
-
 constexpr auto hurttime = 1000;//ms
 
 enum class Mode { AUTO, MANUAL };
+
+void Welcome();
+Mode currentMode = Mode::AUTO; // 默认自动模式
+
+void ShowRecords()
+{
+    BeginBatchDraw();
+    cleardevice();
+
+    settextstyle(40, 0, _T("黑体"));
+    settextcolor(BLUE);
+    const TCHAR* title = _T("历史击杀记录");
+    int textWidth = textwidth(title);
+    int xTitle = (getwidth() - textWidth) / 2;
+    outtextxy(xTitle, 80, title);
+
+    std::ifstream fin("kill_records.txt");
+    if (!fin.is_open())
+    {
+        settextstyle(40, 0, _T("黑体"));
+        settextcolor(RED);
+        const TCHAR* noRecordMsg = _T("暂无击杀记录");
+        int noRecordTextWidth = textwidth(noRecordMsg);
+        int xNoRecord = (getwidth() - noRecordTextWidth) / 2;
+
+        outtextxy(xNoRecord, 180, noRecordMsg);
+    }
+    else
+    {
+        std::vector<unsigned long long> records;
+        unsigned long long kill;
+        int count = 0;
+
+        // 读取所有击杀记录
+        while (fin >> kill)
+        {
+            records.push_back(kill);
+        }
+        fin.close();
+
+        // 对击杀记录进行从高到低排序
+        std::sort(records.begin(), records.end(), [](unsigned long long a, unsigned long long b) {
+            return a > b; // 按降序排列
+            });
+
+        settextstyle(24, 0, _T("黑体"));
+        settextcolor(BLACK);
+
+        // 显示排序后的击杀记录
+        for (size_t i = 0; i < records.size() && i < 10; ++i)
+        {
+            TCHAR line[64];
+            _stprintf_s(line, _T("第 %d 名：击杀数 %llu"), i + 1, records[i]);
+            outtextxy((swidth - textwidth(line)) / 2, 180 + i * 30, line);
+        }
+
+        if (records.empty())
+        {
+            settextstyle(40, 0, _T("黑体"));
+            settextcolor(RED);
+            const TCHAR* noRecordMsg = _T("暂无击杀记录");
+            int noRecordTextWidth = textwidth(noRecordMsg);
+            int xNoRecord = (getwidth() - noRecordTextWidth) / 2;
+
+            outtextxy(xNoRecord, 180, noRecordMsg);
+        }
+    }
+
+
+
+    // 键盘事件 （按Enter返回）
+    LPCTSTR info = _T("按Enter返回");
+    settextstyle(30, 0, _T("黑体")); // 字小一些
+    settextcolor(BLACK);
+    // 绘制提示文字（下方一点）
+    outtextxy(swidth / 2 - textwidth(info) / 2, sheight / 5 + 500, info);
+
+    EndBatchDraw();
+
+    // 等待用户按 Enter 返回
+    while (true)
+    {
+        ExMessage mess;
+        getmessage(&mess, EM_KEY);
+        if (mess.vkcode == 0x0D)
+        {
+            return Welcome();
+        }
+    }
+}
+
 
 bool PointInRect(int x, int y, RECT& r)
 {
@@ -27,45 +119,48 @@ bool RectDuangRect(RECT& r1, RECT& r2)
     r.right = r1.right;
     r.top = r1.top - (r2.bottom - r2.top);
     r.bottom = r1.bottom;
-
     return (r.left < r2.left && r2.left <= r.right && r.top <= r2.top && r2.top <= r.bottom);
 }
 
-// 一个开始界面，返回选择模式
-Mode Welcome()
+
+void Welcome()
 {
+    IMAGE bkimg;
+    loadimage(&bkimg, _T("images/bk2.png"), swidth, sheight * 2);
+
+
     LPCTSTR title = _T("飞机大战");
-    LPCTSTR tplay_auto = _T("开始游戏（自动）");
-    LPCTSTR tplay_manual = _T("开始游戏（手动）");
+    LPCTSTR tplay = _T("开始游戏");
+    LPCTSTR trecord = _T("击杀记录");
     LPCTSTR texit = _T("退出游戏");
 
-    RECT tplay_auto_r, tplay_manual_r, texitr;
+    
+    RECT tplay_r, trecordr, texitr;
     BeginBatchDraw();
-    setbkcolor(WHITE);
+    setbkcolor(RGB(195, 200, 201));
     cleardevice();
+    putimage(0, 0, &bkimg);
     settextstyle(60, 0, _T("黑体"));
     settextcolor(BLACK);
     outtextxy(swidth / 2 - textwidth(title) / 2, sheight / 5, title);
 
     settextstyle(40, 0, _T("黑体"));
-    // 自动
-    tplay_auto_r.left = swidth / 2 - textwidth(tplay_auto) / 2;
-    tplay_auto_r.right = tplay_auto_r.left + textwidth(tplay_auto);
-    tplay_auto_r.top = sheight / 5 * 2.2;
-    tplay_auto_r.bottom = tplay_auto_r.top + textheight(tplay_auto);
-    outtextxy(tplay_auto_r.left, tplay_auto_r.top, tplay_auto);
-
-    // 手动
-    tplay_manual_r.left = swidth / 2 - textwidth(tplay_manual) / 2;
-    tplay_manual_r.right = tplay_manual_r.left + textwidth(tplay_manual);
-    tplay_manual_r.top = sheight / 5 * 2.7;
-    tplay_manual_r.bottom = tplay_manual_r.top + textheight(tplay_manual);
-    outtextxy(tplay_manual_r.left, tplay_manual_r.top, tplay_manual);
+    // 开始游戏
+    tplay_r.left = swidth / 2 - textwidth(tplay) / 2;
+    tplay_r.right = tplay_r.left + textwidth(tplay);
+    tplay_r.top = sheight / 5 * 2.5;
+    tplay_r.bottom = tplay_r.top + textheight(tplay);
+    outtextxy(tplay_r.left, tplay_r.top, tplay);
+    trecordr.left = swidth / 2 - textwidth(texit) / 2;
+    trecordr.right = trecordr.left + textwidth(texit);
+    trecordr.top = sheight / 5 * 3;
+    trecordr.bottom = trecordr.top + textheight(texit);
+    outtextxy(trecordr.left, trecordr.top, trecord);
 
     // 退出
     texitr.left = swidth / 2 - textwidth(texit) / 2;
     texitr.right = texitr.left + textwidth(texit);
-    texitr.top = sheight / 5 * 3.2;
+    texitr.top = sheight / 5 * 3.5;
     texitr.bottom = texitr.top + textheight(texit);
     outtextxy(texitr.left, texitr.top, texit);
 
@@ -77,13 +172,14 @@ Mode Welcome()
         getmessage(&mess, EM_MOUSE);
         if (mess.lbutton)
         {
-            if (PointInRect(mess.x, mess.y, tplay_auto_r))
+            if (PointInRect(mess.x, mess.y, tplay_r))
             {
-                return Mode::AUTO;
+                currentMode = Mode::AUTO; // 设置为自动模式
+                return; // 直接返回
             }
-            else if (PointInRect(mess.x, mess.y, tplay_manual_r))
+            else if (PointInRect(mess.x, mess.y, trecordr))
             {
-                return Mode::MANUAL;
+                return ShowRecords();
             }
             else if (PointInRect(mess.x, mess.y, texitr))
             {
@@ -95,18 +191,52 @@ Mode Welcome()
 
 void Over(unsigned long long& kill)
 {
-    printf_s("o");
+    IMAGE bkimg;
+    loadimage(&bkimg, _T("images/bk2.png"), swidth, sheight * 2);
+    // 准备提示文本
+    LPCTSTR info1 = _T("GAME OVER");
+
+    // 准备击杀数文本
     TCHAR* str = new TCHAR[128];
     _stprintf_s(str, 128, _T("击杀数：%llu"), kill);
 
+    // 准备提示文本
+    LPCTSTR info2 = _T("按Enter返回");
+
+    BeginBatchDraw();
+    setbkcolor(RGB(195, 200, 201));
+    cleardevice();
+    putimage(0, 0, &bkimg);
+
+    // 更改字体大小用于提示文字
+    settextstyle(60, 0, _T("黑体")); // 字小一些
     settextcolor(RED);
-    outtextxy(swidth / 2 - textwidth(str) / 2, sheight / 5, str);
+    // 绘制提示文字（下方一点）
+    outtextxy(swidth / 2 - textwidth(info1) / 2, sheight / 5, info1);
 
-    // 键盘事件 （按Enter返回）
-    LPCTSTR info = _T("按Enter返回");
-    settextstyle(20, 0, _T("黑体"));
-    outtextxy(swidth - textwidth(info), sheight - textheight(info), info);
+    // 设置字体样式
+    settextstyle(40, 0, _T("黑体"));
+    settextcolor(RED);
+    // 绘制击杀数（顶部）
+    outtextxy(swidth / 2 - textwidth(str) / 2, sheight / 5 + textheight(str) + 60, str);
 
+    // 更改字体大小用于提示文字
+    settextstyle(30, 0, _T("黑体")); // 字小一些
+    settextcolor(BLACK);
+    // 绘制提示文字（下方一点）
+    outtextxy(swidth / 2 - textwidth(info2) / 2, sheight / 5 + textheight(str) + 240, info2);
+
+    EndBatchDraw();
+
+    // 将击杀数写入文件
+    ofstream fout("kill_records.txt", ios_base::app); // 追加模式
+    if (fout.is_open())
+    {
+        fout << kill << "\n";
+        fout.close();
+    }
+
+    EndBatchDraw();
     while (true)
     {
         ExMessage mess;
@@ -117,16 +247,12 @@ void Over(unsigned long long& kill)
         }
     }
 }
-
-// 背景、敌机、英雄、子弹
-
 class BK
 {
 public:
     BK(IMAGE& img)
         :img(img), y(-sheight)
     {
-
     }
     void Show()
     {
@@ -134,11 +260,9 @@ public:
         y += 4;
         putimage(0, y, &img);
     }
-
 private:
     IMAGE& img;
     int y;
-
 };
 
 class Hero
@@ -166,7 +290,7 @@ public:
         {
             rect.left = mess.x - img.getwidth() / 2;
             rect.top = mess.y - img.getheight() / 2;
-            rect.right = rect.right = rect.left + img.getwidth();
+            rect.right = rect.left + img.getwidth();
             rect.bottom = rect.top + img.getheight();
         }
     }
@@ -182,9 +306,7 @@ public:
 private:
     IMAGE& img;
     RECT rect;
-
     unsigned int HP;
-
 };
 
 class Enemy
@@ -203,7 +325,6 @@ public:
     }
     bool Show()
     {
-
         if (isdie)
         {
             if (boomsum == 3)
@@ -212,10 +333,8 @@ public:
             }
             putimage(rect.left, rect.top, selfboom + boomsum);
             boomsum++;
-
             return true;
         }
-
         if (rect.top >= sheight)
         {
             return false;
@@ -223,22 +342,17 @@ public:
         rect.top += 4;
         rect.bottom += 4;
         putimage(rect.left, rect.top, &img);
-
         return true;
     }
-
     void Isdie()
     {
         isdie = true;
     }
-
     RECT& GetRect() { return rect; }
-
 private:
     IMAGE& img;
     RECT rect;
     IMAGE selfboom[3];
-
     bool isdie;
     int boomsum;
 };
@@ -263,11 +377,9 @@ public:
         rect.top -= 3;
         rect.bottom -= 3;
         putimage(rect.left, rect.top, &img);
-
         return true;
     }
     RECT& GetRect() { return rect; }
-
 protected:
     IMAGE& img;
     RECT rect;
@@ -293,11 +405,9 @@ public:
         rect.top += 5;
         rect.bottom += 5;
         putimage(rect.left, rect.top, &img);
-
         return true;
     }
 };
-
 
 bool AddEnemy(vector<Enemy*>& es, IMAGE& enemyimg, IMAGE* boom)
 {
@@ -312,7 +422,6 @@ bool AddEnemy(vector<Enemy*>& es, IMAGE& enemyimg, IMAGE* boom)
     }
     es.push_back(e);
     return true;
-
 }
 
 // mode 控制自动/手动
@@ -322,7 +431,7 @@ bool Play(Mode mode)
     cleardevice();
     bool is_play = true;
 
-    IMAGE heroimg, enemyimg, bkimg, bulletimg;
+    IMAGE heroimg, enemyimg, bkimg, bulletimg, Ebulletimg;
     IMAGE eboom[3];
 
     loadimage(&heroimg, _T("images/me1.png"));
@@ -333,6 +442,7 @@ bool Play(Mode mode)
     loadimage(&eboom[0], _T("images/enemy1_down2.png"));
     loadimage(&eboom[1], _T("images/enemy1_down3.png"));
     loadimage(&eboom[2], _T("images/enemy1_down4.png"));
+    loadimage(&Ebulletimg, _T("images/bullet2.png"));
 
     BK bk = BK(bkimg);
     Hero hp = Hero(heroimg);
@@ -355,6 +465,8 @@ bool Play(Mode mode)
         AddEnemy(es, enemyimg, eboom);
     }
 
+    Mode currentMode = mode; // 新增，游戏内当前模式
+
     while (is_play)
     {
         // 合并所有键盘事件处理
@@ -362,6 +474,7 @@ bool Play(Mode mode)
         bool pauseKeyTriggered = false;
         bool fireKeyTriggered = false;
         bool escKeyTriggered = false;
+        bool tabKeyTriggered = false;
         while (peekmessage(&mess, EM_KEY))
         {
             if (mess.message == WM_KEYDOWN && mess.vkcode == VK_SPACE)
@@ -370,30 +483,50 @@ bool Play(Mode mode)
                 fireKeyTriggered = true;
             if (mess.message == WM_KEYDOWN && mess.vkcode == VK_ESCAPE)
                 escKeyTriggered = true;
+            if (mess.message == WM_KEYDOWN && mess.vkcode == VK_TAB)
+                tabKeyTriggered = true;
         }
         if (is_paused)
         {
             // 新暂停界面
             BeginBatchDraw();
+
+
             settextstyle(40, 0, _T("黑体"));
             settextcolor(RGB(0, 0, 0));
-            RECT bg = { 0, sheight / 3, swidth, sheight / 3 * 2 };
-            setfillcolor(RGB(240, 240, 240));
+            RECT bg = { 0, 0, swidth, sheight  * 2 };
+            setfillcolor(RGB(195, 200, 201));
             solidrectangle(bg.left, bg.top, bg.right, bg.bottom);
 
             LPCTSTR pauseText = _T("游戏已暂停");
             LPCTSTR contText = _T("按空格键继续游戏");
             LPCTSTR escText = _T("按ESC键退出到主菜单");
 
+            // 显示当前模式
+            LPCTSTR modeText = (currentMode == Mode::AUTO) ? _T("当前模式：自动") : _T("当前模式：手动");
+            LPCTSTR tabText = _T("按Tab键切换模式");
+
             settextcolor(RGB(200, 50, 50));
-            outtextxy(swidth / 2 - textwidth(pauseText) / 2, sheight / 2 - 60, pauseText);
+            setbkcolor(RGB(195, 200, 201));
+
+            outtextxy(swidth / 2 - textwidth(pauseText) / 2, sheight / 2 - 100, pauseText);
             settextcolor(BLACK);
+            setbkcolor(RGB(195, 200, 201));
             settextstyle(30, 0, _T("黑体"));
-            outtextxy(swidth / 2 - textwidth(contText) / 2, sheight / 2, contText);
-            outtextxy(swidth / 2 - textwidth(escText) / 2, sheight / 2 + 40, escText);
+            outtextxy(swidth / 2 - textwidth(contText) / 2, sheight / 2 - 20, contText);
+            outtextxy(swidth / 2 - textwidth(escText) / 2, sheight / 2 + 30, escText);
+
+            settextstyle(25, 0, _T("黑体"));
+            settextcolor(RGB(50, 100, 200));
+            setbkcolor(RGB(195, 200, 201));
+            outtextxy(swidth / 2 - textwidth(modeText) / 2, sheight / 2 + 75, modeText);
+            settextcolor(RGB(60, 60, 60));
+            setbkcolor(RGB(195, 200, 201));
+            outtextxy(swidth / 2 - textwidth(tabText) / 2, sheight / 2 + 115, tabText);
+
             EndBatchDraw();
 
-            // 只响应空格或ESC
+            // 只响应空格或ESC或Tab
             bool wait = true;
             while (wait)
             {
@@ -410,6 +543,38 @@ bool Play(Mode mode)
                         // 退出到主菜单
                         return true;
                     }
+                    if (pause_mess.message == WM_KEYDOWN && pause_mess.vkcode == VK_TAB)
+                    {
+                        // 切换模式
+                        if (currentMode == Mode::AUTO) currentMode = Mode::MANUAL;
+                        else currentMode = Mode::AUTO;
+                        // 刷新暂停界面
+                        BeginBatchDraw();
+                        RECT bg = { 0, 0, swidth, sheight * 2 };
+                        
+                        setbkcolor(RGB(195, 200, 201));
+                        settextstyle(40, 0, _T("黑体"));
+                        settextcolor(RGB(0, 0, 0));
+                        setfillcolor(RGB(195, 200, 201));
+                        solidrectangle(bg.left, bg.top, bg.right, bg.bottom);
+
+                        settextcolor(RGB(200, 50, 50));
+                        outtextxy(swidth / 2 - textwidth(pauseText) / 2, sheight / 2 - 100, pauseText);
+                        settextcolor(BLACK);
+                        settextstyle(30, 0, _T("黑体"));
+                        outtextxy(swidth / 2 - textwidth(contText) / 2, sheight / 2 - 20, contText);
+                        outtextxy(swidth / 2 - textwidth(escText) / 2, sheight / 2 + 30, escText);
+
+                        // 显示切换后的模式
+                        LPCTSTR newModeText = (currentMode == Mode::AUTO) ? _T("当前模式：自动") : _T("当前模式：手动");
+                        
+                        settextstyle(25, 0, _T("黑体"));
+                        settextcolor(RGB(50, 100, 200));
+                        outtextxy(swidth / 2 - textwidth(newModeText) / 2, sheight / 2 + 75, newModeText);
+                        settextcolor(RGB(60, 60, 60));
+                        outtextxy(swidth / 2 - textwidth(tabText) / 2, sheight / 2 + 115, tabText);
+                        EndBatchDraw();
+                    }
                 }
                 Sleep(8);
             }
@@ -425,13 +590,13 @@ bool Play(Mode mode)
         }
 
         // --- 自动/手动模式控制子弹发射 ---
-        if (mode == Mode::MANUAL) {
+        if (currentMode == Mode::MANUAL) {
             if (fireKeyTriggered)
                 bs.push_back(new Bullet(bulletimg, hp.GetRect()));
         }
-        else if (mode == Mode::AUTO) {
+        else if (currentMode == Mode::AUTO) {
             hero_bullet_timer++;
-            if (hero_bullet_timer >= 10) { // 约每10帧发一发
+            if (hero_bullet_timer >= 20) { // 约每10帧发一发
                 bs.push_back(new Bullet(bulletimg, hp.GetRect()));
                 hero_bullet_timer = 0;
             }
@@ -443,7 +608,7 @@ bool Play(Mode mode)
         {
             for (auto& i : es)
             {
-                ebs.push_back(new EBullet(bulletimg, i->GetRect()));
+                ebs.push_back(new EBullet(Ebulletimg, i->GetRect()));
             }
             enemy_bullet_timer = 0;
         }
@@ -457,6 +622,14 @@ bool Play(Mode mode)
         hp.Control();
 
         hp.Show();
+
+        // 显示当前击杀数
+        TCHAR killStr[64];
+        _stprintf_s(killStr, _T("击杀数：%llu"), kill);
+        setbkcolor(RGB(195, 200, 201));
+        settextstyle(24, 0, _T("黑体"));
+        settextcolor(RED);
+        outtextxy(10, 10, killStr);
 
         auto bsit = bs.begin();
         while (bsit != bs.end())
@@ -553,9 +726,8 @@ int main()
     bool is_live = true;
     while (is_live)
     {
-        Mode mode = Welcome();
-        is_live = Play(mode);
+        Welcome();
+        is_live = Play(currentMode);
     }
-
     return 0;
 }
