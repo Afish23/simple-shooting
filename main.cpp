@@ -1,4 +1,4 @@
-// ·É»ú´óÕ½
+// é£æœºå¤§æˆ˜
 // EasyX
 #include <iostream>
 #include <graphics.h>//easyx
@@ -29,22 +29,22 @@ bool RectDuangRect(RECT& r1, RECT& r2)
 	return (r.left < r2.left && r2.left <= r.right && r.top <= r2.top && r2.top <= r.bottom);
 }
 
-// Ò»¸ö¿ªÊ¼½çÃæ
+// ä¸€ä¸ªå¼€å§‹ç•Œé¢
 void Welcome()
 {
-	LPCTSTR title = _T("·É»ú´óÕ½");
-	LPCTSTR tplay = _T("¿ªÊ¼ÓÎÏ·");
-	LPCTSTR texit = _T("ÍË³öÓÎÏ·");
+	LPCTSTR title = _T("é£æœºå¤§æˆ˜");
+	LPCTSTR tplay = _T("å¼€å§‹æ¸¸æˆ");
+	LPCTSTR texit = _T("é€€å‡ºæ¸¸æˆ");
 
 	RECT tplayr, texitr;
 	BeginBatchDraw();
 	setbkcolor(WHITE);
 	cleardevice();
-	settextstyle(60, 0, _T("ºÚÌå"));
+	settextstyle(60, 0, _T("é»‘ä½“"));
 	settextcolor(BLACK);
 	outtextxy(swidth / 2 - textwidth(title) / 2, sheight / 5, title);
 
-	settextstyle(40, 0, _T("ºÚÌå"));
+	settextstyle(40, 0, _T("é»‘ä½“"));
 	tplayr.left = swidth / 2 - textwidth(tplay) / 2;
 	tplayr.right = tplayr.left + textwidth(tplay);
 	tplayr.top = sheight / 5 * 2.5;
@@ -82,14 +82,14 @@ void Over(unsigned long long& kill)
 {
 	printf_s("o");
 	TCHAR* str = new TCHAR[128];
-	_stprintf_s(str, 128, _T("»÷É±Êı£º%llu"), kill);
+	_stprintf_s(str, 128, _T("å‡»æ€æ•°ï¼š%llu"), kill);
 
 	settextcolor(RED);
 	outtextxy(swidth / 2 - textwidth(str) / 2, sheight / 5, str);
 
-	// ¼üÅÌÊÂ¼ş £¨°´Enter·µ»Ø£©
-	LPCTSTR info = _T("°´Enter·µ»Ø");
-	settextstyle(20, 0, _T("ºÚÌå"));
+	// é”®ç›˜äº‹ä»¶ ï¼ˆæŒ‰Enterè¿”å›ï¼‰
+	LPCTSTR info = _T("æŒ‰Enterè¿”å›");
+	settextstyle(20, 0, _T("é»‘ä½“"));
 	outtextxy(swidth - textwidth(info), sheight - textheight(info), info);
 
 	while (true)
@@ -103,7 +103,7 @@ void Over(unsigned long long& kill)
 	}
 }
 
-// ±³¾°¡¢µĞ»ú¡¢Ó¢ĞÛ¡¢×Óµ¯
+// èƒŒæ™¯ã€æ•Œæœºã€è‹±é›„ã€å­å¼¹
 
 class BK
 {
@@ -302,37 +302,37 @@ bool AddEnemy(vector<Enemy*>& es, IMAGE& enemyimg, IMAGE* boom)
 
 bool Play()
 {
-	setbkcolor(WHITE);        // ÉèÖÃ±³¾°ÑÕÉ«Îª°×É«
-	cleardevice();            // Çå³ıÆÁÄ»
+	setbkcolor(WHITE);
+	cleardevice();
+	bool is_play = true;
 
-	bool is_play = true;      // ÓÎÏ·ÔËĞĞ±êÖ¾
-
-	// ¼ÓÔØ¸÷ÖÖÍ¼Ïñ×ÊÔ´
 	IMAGE heroimg, enemyimg, bkimg, bulletimg;
-	IMAGE eboom[3];           // ±¬Õ¨¶¯»­Í¼Æ¬Êı×é
+	IMAGE eboom[3];
 
-	loadimage(&heroimg, _T("images/me1.png"));              // ¼ÓÔØÓ¢ĞÛ·É»úÍ¼Æ¬
-	loadimage(&enemyimg, _T("images/enemy1.png"));          // ¼ÓÔØµĞ»úÍ¼Æ¬
-	loadimage(&bkimg, _T("images/bk2.png"), swidth, sheight * 2);  // ¼ÓÔØ±³¾°Í¼Æ¬
-	loadimage(&bulletimg, _T("images/bullet1.png"));        // ¼ÓÔØ×Óµ¯Í¼Æ¬
+	loadimage(&heroimg, _T("images/me1.png"));
+	loadimage(&enemyimg, _T("images/enemy1.png"));
+	loadimage(&bkimg, _T("images/bk2.png"), swidth, sheight * 2);
+	loadimage(&bulletimg, _T("images/bullet1.png"));
 
-	loadimage(&eboom[0], _T("images/enemy1_down2.png"));    // ¼ÓÔØ±¬Õ¨¶¯»­µÚ1Ö¡
-	loadimage(&eboom[1], _T("images/enemy1_down3.png"));    // ¼ÓÔØ±¬Õ¨¶¯»­µÚ2Ö¡
-	loadimage(&eboom[2], _T("images/enemy1_down4.png"));    // ¼ÓÔØ±¬Õ¨¶¯»­µÚ3Ö¡
+	loadimage(&eboom[0], _T("images/enemy1_down2.png"));
+	loadimage(&eboom[1], _T("images/enemy1_down3.png"));
+	loadimage(&eboom[2], _T("images/enemy1_down4.png"));
 
-	BK bk = BK(bkimg);         // ´´½¨±³¾°¶ÔÏó
-	Hero hp = Hero(heroimg);  // ´´½¨Ó¢ĞÛ·É»ú¶ÔÏó
+	BK bk = BK(bkimg);
+	Hero hp = Hero(heroimg);
 
-	vector<Enemy*> es;         // µĞ»ú¼¯ºÏ
-	vector<Bullet*> bs;        // ×Óµ¯¼¯ºÏ
-	vector<EBullet*> ebs;      // µĞ·½×Óµ¯¼¯ºÏ
-	int bsing = 0;             // ×Óµ¯¼ÆÊ±Æ÷
+	vector<Enemy*> es;
+	vector<Bullet*> bs;
+	vector<EBullet*> ebs;
+	int bsing = 0;
 
-	clock_t hurtlast = clock();  // ÉÏ´ÎÊÜÉËÊ±¼ä
+	clock_t hurtlast = clock();
 
-	unsigned long long kill = 0; // »÷É±¼ÆÊı
+	unsigned long long kill = 0;
 
-	// ³õÊ¼Éú³É5¼ÜµĞ»ú
+	bool is_paused = false;  // æš‚åœçŠ¶æ€æ ‡å¿—
+	bool space_down = false; // ç©ºæ ¼é”®æ˜¯å¦è¢«æŒ‰ä¸‹
+
 	for (int i = 0; i < 5; i++)
 	{
 		AddEnemy(es, enemyimg, eboom);
@@ -340,15 +340,44 @@ bool Play()
 
 	while (is_play)
 	{
-		bsing++;
+		// ---- æ–°çš„ç©ºæ ¼æ£€æµ‹æ–¹å¼ ----
+		ExMessage mess;
+		bool pauseKeyTriggered = false;
+		while (peekmessage(&mess, EM_KEY))
+		{
+			if (mess.message == WM_KEYDOWN && mess.vkcode == VK_SPACE)
+			{
+				pauseKeyTriggered = true;
+			}
+		}
+		if (pauseKeyTriggered)
+		{
+			is_paused = !is_paused;
+			if (is_paused)
+			{
+				BeginBatchDraw();
+				settextstyle(40, 0, _T("é»‘ä½“"));
+				settextcolor(RED);
+				LPCTSTR pauseText = _T("æš‚åœä¸­...");
+				outtextxy(swidth / 2 - textwidth(pauseText) / 2, sheight / 2, pauseText);
+				EndBatchDraw();
+			}
+		}
+		// ---- ç»“æŸ ----
 
-		// Ã¿¸ôÒ»¶¨Ê±¼ä·¢ÉäÒ»¿Å×Óµ¯
+		if (is_paused)
+		{
+			Sleep(16);
+			continue;
+		}
+
+
+
+		bsing++;
 		if (bsing % 10 == 0)
 		{
 			bs.push_back(new Bullet(bulletimg, hp.GetRect()));
 		}
-
-		// Ã¿ÃëÈÃËùÓĞµĞ»ú·¢ÉäÒ»´Î×Óµ¯
 		if (bsing == 60)
 		{
 			bsing = 0;
@@ -358,39 +387,16 @@ bool Play()
 			}
 		}
 
-		BeginBatchDraw();       // ¿ªÊ¼ÅúÁ¿»æÍ¼
+		BeginBatchDraw();
 
-		bk.Show();              // »æÖÆ±³¾°
-		Sleep(2);               // ¶ÌÔİÑÓ³Ù
-		flushmessage();         // Çå¿ÕÏûÏ¢¶ÓÁĞ
-		Sleep(2);               // ¶ÌÔİÑÓ³Ù
-		hp.Control();           // ´¦ÀíÓ¢ĞÛ·É»ú¿ØÖÆ
+		bk.Show();
+		Sleep(2);
+		flushmessage();
+		Sleep(2);
+		hp.Control();
 
-		// ´¦Àí¿Õ¸ñ¼üÔİÍ£¹¦ÄÜ
-		if (_kbhit())
-		{
-			char v = _getch();
-			if (v == 0x20)
-			{
-				Sleep(500);
-				while (true)
-				{
-					if (_kbhit())
-					{
-						v = _getch();
-						if (v == 0x20)
-						{
-							break;
-						}
-					}
-					Sleep(16);
-				}
-			}
-		}
+		hp.Show();
 
-		hp.Show();              // »æÖÆÓ¢ĞÛ·É»ú
-
-		// ¸üĞÂºÍ»æÖÆËùÓĞ×Óµ¯
 		auto bsit = bs.begin();
 		while (bsit != bs.end())
 		{
@@ -404,7 +410,6 @@ bool Play()
 			}
 		}
 
-		// ¸üĞÂºÍ»æÖÆËùÓĞµĞ·½×Óµ¯£¬²¢¼ì²âÓëÓ¢ĞÛ·É»úµÄÅö×²
 		auto ebsit = ebs.begin();
 		while (ebsit != ebs.end())
 		{
@@ -426,11 +431,9 @@ bool Play()
 			}
 		}
 
-		// ¸üĞÂºÍ»æÖÆËùÓĞµĞ»ú£¬¼ì²âÅö×²ºÍ»÷»Ù
 		auto it = es.begin();
 		while (it != es.end())
 		{
-			// ¼ì²âµĞ»úÓëÓ¢ĞÛ·É»úµÄÅö×²
 			if (RectDuangRect((*it)->GetRect(), hp.GetRect()))
 			{
 				if (clock() - hurtlast >= hurttime)
@@ -439,25 +442,21 @@ bool Play()
 					hurtlast = clock();
 				}
 			}
-
-			// ¼ì²âµĞ»úÓë×Óµ¯µÄÅö×²
 			auto bit = bs.begin();
 			while (bit != bs.end())
 			{
 				if (RectDuangRect((*bit)->GetRect(), (*it)->GetRect()))
 				{
-					(*it)->Isdie();          // ±ê¼ÇµĞ»úÎªËÀÍö
-					delete (*bit);           // É¾³ı×Óµ¯
-					bs.erase(bit);           // ´ÓÁĞ±íÖĞÒÆ³ı
+					(*it)->Isdie();
+					delete (*bit);
+					bs.erase(bit);
 
-					kill++;                  // »÷É±ÊıÔö¼Ó
+					kill++;
 
 					break;
 				}
 				bit++;
 			}
-
-			// ¸üĞÂµĞ»ú×´Ì¬£¬Èç¹ûµĞ»ú³¬³öÆÁÄ»ÔòÉ¾³ı
 			if (!(*it)->Show())
 			{
 				delete (*it);
@@ -466,24 +465,21 @@ bool Play()
 			}
 			it++;
 		}
-
-		// ²¹³äµĞ»úÊıÁ¿ÖÁ5¼Ü
 		for (int i = 0; i < 5 - es.size(); i++)
 		{
 			AddEnemy(es, enemyimg, eboom);
 		}
 
-		EndBatchDraw();         // ½áÊøÅúÁ¿»æÍ¼
+		EndBatchDraw();
 	}
-
-	printf_s("e");             // µ÷ÊÔÊä³ö
-	Over(kill);                // ÏÔÊ¾ÓÎÏ·½áÊø»­Ãæ
+	printf_s("e");
+	Over(kill);
 
 	return true;
 }
 int main()
 {
-	// easyx³õÊ¼»¯
+	// easyxåˆå§‹åŒ–
 	initgraph(swidth, sheight, EW_NOMINIMIZE | EW_SHOWCONSOLE);
 	bool is_live = true;
 	while (is_live)
