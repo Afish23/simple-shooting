@@ -171,32 +171,6 @@ void ShowRecords() {
     }
 }
 
-//  控件模拟输入（EasyX没有输入框，使用控制台输入模拟）
-/*
-string ReadString(const string& prompt, bool showAsterisk = false) {
-    // 只显示在控制台
-    cout << prompt;
-    string input;
-    if (showAsterisk) {
-        char c;
-        while ((c = _getch()) != '\r') {
-            if (c == '\b' && !input.empty()) {
-                input.pop_back();
-                cout << "\b \b";
-            }
-            else if (c != '\b' && c != '\n') {
-                input.push_back(c);
-                cout << '*';
-            }
-        }
-        cout << endl;
-    }
-    else {
-        getline(cin, input);
-    }
-    return input;
-}
-*/
 bool PointInRect(int x, int y, RECT& r)
 {
     return (r.left <= x && x <= r.right && r.top <= y && y <= r.bottom);
@@ -204,14 +178,9 @@ bool PointInRect(int x, int y, RECT& r)
 
 bool RectDuangRect(RECT& r1, RECT& r2)
 {
-    RECT r;
-    r.left = r1.left - (r2.right - r2.left);
-    r.right = r1.right;
-    r.top = r1.top - (r2.bottom - r2.top);
-    r.bottom = r1.bottom;
-    return (r.left < r2.left && r2.left <= r.right && r.top <= r2.top && r2.top <= r.bottom);
+    return !(r1.right < r2.left || r2.right < r1.left ||
+        r1.bottom < r2.top || r2.bottom < r1.top);
 }
-
 //  LoginRegisterUI 函数（纯图形界面）
 bool LoginRegisterUI() {
     SetFocus(GetHWnd());
@@ -368,14 +337,6 @@ bool LoginRegisterUI() {
                         }
                         else if (currentInput == 1) {
                             password += (char)msg.ch;
-                        }
-                    }
-                    else if (msg.ch == '\b') {  // 处理退格键
-                        if (currentInput == 0 && !account.empty()) {
-                            account.pop_back();
-                        }
-                        else if (currentInput == 1 && !password.empty()) {
-                            password.pop_back();
                         }
                     }
                 }
@@ -730,6 +691,10 @@ public:
             boomsum++;
             return true;
         }
+        if (rect.top >= sheight)
+        {
+            return false;
+        }
         // 移动速度更慢
         rect.top += 4;  // 普通是4，这里减半
         rect.bottom += 4;
@@ -755,6 +720,10 @@ public:
             putimage(rect.left, rect.top, &selfboom[boomsum]);
             boomsum++;
             return true;
+        }
+        if (rect.top >= sheight)
+        {
+            return false;
         }
         // 更快的移动速度和不规则移动
         rect.top += 6;  // 比普通敌机快50%
@@ -876,9 +845,11 @@ bool AddEnemy(vector<Enemy*>& es, int enemyType,
 
     // 碰撞检测
     for (auto& existingEnemy : es) {
-        if (RectDuangRect(existingEnemy->GetRect(), e->GetRect())) {
-            delete e;
-            return false;
+        if (existingEnemy->GetRect().top < 200) {
+            if (RectDuangRect(existingEnemy->GetRect(), e->GetRect())) {
+                delete e;
+                return false;
+            }
         }
     }
 
@@ -899,7 +870,7 @@ bool Play(Mode mode)
 
     // 加载三种敌机图片
     loadimage(&normalEnemyImg, _T("images/enemy1.png"));   // 普通敌机
-    loadimage(&tankEnemyImg, _T("images/enemy3.png"));    // 坦克敌机（肉盾）
+    loadimage(&tankEnemyImg, _T("images/enemy3.png"), 90, 110);    // 坦克敌机（肉盾）
     loadimage(&agileEnemyImg, _T("images/enemy2.png"));   // 敏捷敌机
 
     loadimage(&Ebulletimg, _T("images/bullet2.png"));
@@ -921,11 +892,11 @@ bool Play(Mode mode)
     loadimage(&eboom2[3], _T("images/enemy2_down4.png"));
     loadimage(&eboom2[4], _T("images/enemy2_down5.png"));
 
-    loadimage(&eboom3[0], _T("images/enemy3_down1.png"));
-    loadimage(&eboom3[1], _T("images/enemy3_down2.png"));
-    loadimage(&eboom3[2], _T("images/enemy3_down4.png"));
-    loadimage(&eboom3[3], _T("images/enemy3_down5.png"));
-    loadimage(&eboom3[4], _T("images/enemy3_down6.png"));
+    loadimage(&eboom3[0], _T("images/enemy3_down1.png"), 90, 110);
+    loadimage(&eboom3[1], _T("images/enemy3_down2.png"), 90, 110);
+    loadimage(&eboom3[2], _T("images/enemy3_down4.png"), 90, 110);
+    loadimage(&eboom3[3], _T("images/enemy3_down5.png"), 90, 110);
+    loadimage(&eboom3[4], _T("images/enemy3_down6.png"), 90, 110);
 
     BK bk = BK(bkimg);
     Hero hp = Hero(heroimg, meboom);
@@ -1178,6 +1149,7 @@ bool Play(Mode mode)
                         kill++;
                     }
                     delete (*bit);
+                    //printf("Enemy deleted. Total: %d\n", es.size());
                     bit = bs.erase(bit);
                     break;
                 }
@@ -1189,7 +1161,9 @@ bool Play(Mode mode)
             if (!(*it)->Show())
             {
                 delete (*it);
+                //printf("Enemy deleted. Total: %d\n", es.size());
                 it = es.erase(it);
+               // cout << es.size() << "\n";
             }
             else
             {
@@ -1198,7 +1172,7 @@ bool Play(Mode mode)
         }
         for (int i = 0; i < 5 - es.size(); i++) {
             bool added = false;
-            for (int tryCount = 0; tryCount < 10 && !added; ++tryCount) {
+            for (int tryCount = 0; tryCount < 20000&& !added; ++tryCount) {
                 int enemyType;
                 if (kill < 10) enemyType = 0;
                 else if (kill < 20) enemyType = rand() % 2;
