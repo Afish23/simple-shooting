@@ -899,7 +899,7 @@ bool Play(Mode mode)
 
     // 加载三种敌机图片
     loadimage(&normalEnemyImg, _T("images/enemy1.png"));   // 普通敌机
-    loadimage(&tankEnemyImg, _T("images/enemy3.png"));    // 坦克敌机（肉盾）
+    loadimage(&tankEnemyImg, _T("images/enemy3.png"), 80, 110, true);    // 坦克敌机（肉盾）
     loadimage(&agileEnemyImg, _T("images/enemy2.png"));   // 敏捷敌机
 
     loadimage(&Ebulletimg, _T("images/bullet2.png"));
