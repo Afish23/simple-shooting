@@ -214,6 +214,7 @@ bool RectDuangRect(RECT& r1, RECT& r2)
 
 //  LoginRegisterUI 函数（纯图形界面）
 bool LoginRegisterUI() {
+    SetFocus(GetHWnd());
     LoadUserDB();
     int op = 1; // 当前选中的选项
     bool showLogin = false, showRegister = false;
@@ -245,18 +246,13 @@ bool LoginRegisterUI() {
         RECT registerRect = { swidth / 2 - 150, 250, swidth / 2 + 150, 300 };
         RECT exitRect = { swidth / 2 - 150, 350, swidth / 2 + 150, 400 };
 
-        // 高亮当前选项
-        if (op == 1) fillrectangle(loginRect.left, loginRect.top, loginRect.right, loginRect.bottom);
-        if (op == 2) fillrectangle(registerRect.left, registerRect.top, registerRect.right, registerRect.bottom);
-        if (op == 3) fillrectangle(exitRect.left, exitRect.top, exitRect.right, exitRect.bottom);
-
-        settextcolor(op == 1 ? WHITE : BLACK);
+        //settextcolor(op == 1 ? WHITE : BLACK);
         outtextxy(swidth / 2 - textwidth(_T("1. 登录账号")) / 2, 160, _T("1. 登录账号"));
 
-        settextcolor(op == 2 ? WHITE : BLACK);
+        //settextcolor(op == 2 ? WHITE : BLACK);
         outtextxy(swidth / 2 - textwidth(_T("2. 注册账号")) / 2, 260, _T("2. 注册账号"));
 
-        settextcolor(op == 3 ? WHITE : BLACK);
+        //settextcolor(op == 3 ? WHITE : BLACK);
         outtextxy(swidth / 2 - textwidth(_T("3. 退出游戏")) / 2, 360, _T("3. 退出游戏"));
 
         // 显示登录/注册输入框
@@ -298,7 +294,7 @@ bool LoginRegisterUI() {
         EndBatchDraw();
 
         ExMessage msg;
-        if (peekmessage(&msg, EM_KEY | EM_MOUSE)) {
+        if (peekmessage(&msg)) {
             if (msg.message == WM_KEYDOWN) {
                 if (showLogin || showRegister) {
                     // 处理输入
@@ -1229,7 +1225,7 @@ int main()
     setbkcolor(WHITE);
     cleardevice();
     // easyx初始化
-    initgraph(swidth, sheight, EW_NOMINIMIZE | EW_SHOWCONSOLE);
+    initgraph(swidth, sheight, EW_NOMINIMIZE);
 
     // 登录/注册流程
     if (!LoginRegisterUI()) return 0;
